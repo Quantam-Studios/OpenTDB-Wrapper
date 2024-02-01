@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>OpenTDB-Wrapper</AssemblyName>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>OpenTDB</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Open Trivia DB Wrapper</Title>
+    <Authors>Zach Goodson</Authors>
+    <Company>Zach Goodson</Company>
+    <Description>A C# wrapper for the Open Trivia DB.</Description>
+    <PackageTags>opentdb openTriviaDatabase wrapper trivia</PackageTags>
+    <PackageReleaseNotes>Initial Release</PackageReleaseNotes>
+    <VersionPrefix>0.0.1</VersionPrefix>
+    <PackAsTool>False</PackAsTool>
+  </PropertyGroup>
+
+</Project>
