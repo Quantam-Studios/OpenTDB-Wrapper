@@ -91,7 +91,7 @@ The `Encoding` enumerator contains all valid options for the "encoding" value of
 
 ### Manipulating Questions
 > [!IMPORTANT]  
-> All values in the `Question` class will be encoded in whatever you sepcified when calling `RequestAsync()`. You must handle parsing of this data.
+> All values in the `Question` class will be encoded in whatever you specified when calling `RequestAsync()`. You must handle parsing of this data.
 
 The `Question` class looks like this:
 ```cs
