@@ -34,6 +34,7 @@ await openTDB.GetQuestionsAsync(10, Category.Nature, Difficulty.Easy, QuestionTy
 ```
 > [!IMPORTANT]  
 > All values in the `Question` class will be encoded in whatever you specified when calling `GetQuestionsWithEncodingAsync()`. You must handle parsing of this data.
+
 Here is a more complicated example. If you wanted to get 10 Nature questions, that were of easy difficulty, in the form of a multiple-choice questions, and had legacy URL encoding it would look like so:
 ```cs
 await openTDB.GetQuestionsWithEncodingAsync(10, Category.Nature, Difficulty.Easy, QuestionType.MultipleChoice, Encoding.LegacyURL);
