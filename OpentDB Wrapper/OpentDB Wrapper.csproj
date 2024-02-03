@@ -11,10 +11,25 @@
     <Company>Zach Goodson</Company>
     <Description>A C# wrapper for the Open Trivia DB.</Description>
     <PackageTags>opentdb openTriviaDatabase wrapper trivia</PackageTags>
-    <PackageReleaseNotes>Initial Release</PackageReleaseNotes>
-    <VersionPrefix>0.0.1</VersionPrefix>
+    <PackageReleaseNotes>Add GetQuestionsAsync() for ease of use.</PackageReleaseNotes>
+    <VersionPrefix>1.0.0</VersionPrefix>
     <PackAsTool>False</PackAsTool>
     <PackageId>OpenTDB-Wrapper</PackageId>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/Quantam-Studios/OpenTDB-Wrapper</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Quantam-Studios/OpenTDB-Wrapper</PackageProjectUrl>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>

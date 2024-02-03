@@ -14,7 +14,7 @@ namespace OpenTDB
         private static readonly HttpClient HttpClient = new();
 
         /// <summary>
-        /// Requests trivia questions from the Open Trivia Database.
+        /// Requests trivia questions from the Open Trivia Database with a specified encoding.
         /// </summary>
         /// <param name="questionCount">Number of questions to request (1 to 50).</param>
         /// <param name="category">Category of the questions.</param>
@@ -24,7 +24,7 @@ namespace OpenTDB
         /// <returns>List of trivia questions.</returns>
         /// <exception cref="OpenTDBException">Thrown if the HTTP request fails or JSON parsing fails.</exception>
         /// <exception cref="ArgumentException">Thrown if questionCount is 0 or greater than 50.</exception>
-        public async Task<List<Question>> RequestAsync(uint questionCount, Category category = Category.Any, Difficulty difficulty = Difficulty.Any, QuestionType type = QuestionType.Any, Encoding encoding = Encoding.HTML)
+        public async Task<List<Question>> GetQuestionsWithEncodingAsync(uint questionCount, Category category = Category.Any, Difficulty difficulty = Difficulty.Any, QuestionType type = QuestionType.Any, Encoding encoding = Encoding.HTML)
         {
             // Check if questionCount is within the allowed range
             if (questionCount == 0 || questionCount > 50)
@@ -41,6 +41,45 @@ namespace OpenTDB
                 var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 return ParseResponse(content);
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new OpenTDBException($"HTTP request failed: {ex.Message}");
+            }
+            catch (JsonException ex)
+            {
+                throw new OpenTDBException($"JSON parsing failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Requests trivia questions from the Open Trivia Database and returns them in plain text.
+        /// </summary>
+        /// <param name="questionCount">Number of questions to request (1 to 50).</param>
+        /// <param name="category">Category of the questions.</param>
+        /// <param name="difficulty">Difficulty level of the questions.</param>
+        /// <param name="type">Type of questions (MultipleChoice or TrueFalse).</param>
+        /// <returns>List of trivia questions.</returns>
+        /// <exception cref="OpenTDBException">Thrown if the HTTP request fails or JSON parsing fails.</exception>
+        /// <exception cref="ArgumentException">Thrown if questionCount is 0 or greater than 50.</exception>
+        public async Task<List<Question>> GetQuestionsAsync(uint questionCount, Category category = Category.Any, Difficulty difficulty = Difficulty.Any, QuestionType type = QuestionType.Any)
+        {
+            // Check if questionCount is within the allowed range
+            if (questionCount == 0 || questionCount > 50)
+            {
+                throw new ArgumentException("Question count must be between 1 and 50 (inclusive).", nameof(questionCount));
+            }
+
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, CreateLink(questionCount, category, difficulty, type, Encoding.Base64));
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                var response = await HttpClient.SendAsync(request).ConfigureAwait(false);
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var parsedResponse = ParseResponse(content);
+                ConvertBase64Response(ref parsedResponse);
+                return parsedResponse;
             }
             catch (HttpRequestException ex)
             {
@@ -137,6 +176,26 @@ namespace OpenTDB
             }
 
             return questions;
+        }
+
+        /// <summary>
+        /// Converts base64-encoded strings in the list of questions to their original UTF-8 representations.
+        /// </summary>
+        /// <param name="questions">List of questions to be modified.</param>
+        private void ConvertBase64Response(ref List<Question> questions)
+        {
+            foreach (var question in questions)
+            {
+                question.Category = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(question.Category));
+                question.Difficulty = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(question.Difficulty));
+                question.QuestionTitle = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(question.QuestionTitle));
+                question.Type = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(question.Type));
+                question.CorrectAnswer = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(question.CorrectAnswer));
+                for (int i = 0; i < question.IncorrectAnswers.Length; i++)
+                {
+                    question.IncorrectAnswers[i] = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(question.IncorrectAnswers[i]));
+                }
+            }
         }
 
         /// <summary>

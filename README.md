@@ -17,23 +17,30 @@ OpenTDB.OpenTDB openTDB = new(); // This contains an HttpClient and it is good p
 ```
 ### Getting Questions
 > [!WARNING]
-> `RequestAsync()` should be wrapped in a `try-catch` block as it throws `OpenTDBException` and `ArguementException`.
+> `GetQuestionsAsync()` should be wrapped in a `try-catch` block as it throws `OpenTDBException` and `ArguementException`.
 
 > [!WARNING]  
-> `RequestAsync()`, should not be called less-than 5 seconds apart due to Open Trivia DB' rate limits.
+> `GetQuestionsAsync()`, should not be called less-than 5 seconds apart due to Open Trivia DB' rate limits.
 
-Use `RequestAsync()` to get a list of questions. This method has default values of `Category.Any`, `Difficulty.Any`, `QuestionType.Any`, and `Encoding.HTML`.
+Use `GetQuestionsAsync()` to get a list of questions. This method has default values of `Category.Any`, `Difficulty.Any`, and `QuestionType.Any`.
 ```cs
-await openTDB.RequestAsync(1);
+await openTDB.GetQuestionsAsync(10);
 // returns a List<Question> with a Count of 10.
 ```
-Here is a more complicated example. If you wanted to get 10 Nature questions, that were of easy difficulty, in the form of a multiple-choice questions, and had Base64 encoding it would look like so:
+Here is a more complicated example. If you wanted to get 10 Nature questions, that were of easy difficulty, and in the form of multiple-choice questions, it would look like so:
 ```cs
-await openTDB.RequestAsync(10, Category.Nature, Difficulty.Easy, QuestionType.MultipleChoice, Encoding.Base64);
+await openTDB.GetQuestionsAsync(10, Category.Nature, Difficulty.Easy, QuestionType.MultipleChoice);
+// returns a List<Question> with a Count of 10.
+```
+> [!IMPORTANT]  
+> All values in the `Question` class will be encoded in whatever you specified when calling `GetQuestionsWithEncodingAsync()`. You must handle parsing of this data.
+Here is a more complicated example. If you wanted to get 10 Nature questions, that were of easy difficulty, in the form of a multiple-choice questions, and had legacy URL encoding it would look like so:
+```cs
+await openTDB.GetQuestionsWithEncodingAsync(10, Category.Nature, Difficulty.Easy, QuestionType.MultipleChoice, Encoding.LegacyURL);
 // returns a List<Question> with a Count of 10.
 ```
 ### Question Categories
-The `Category` enumerator contains all valid opetions for the "category" value of `ResponseAsync()`.
+The `Category` enumerator contains all valid opetions for the "category" value of the API.
 | Value               | Description           | URL Request Category Value |
 | ------------------- | --------------------- | -------------- |
 | `Any`               | Any category           | -              |
@@ -63,7 +70,7 @@ The `Category` enumerator contains all valid opetions for the "category" value o
 | `CartoonsAnimations`| Cartoons & Animations | 32             |
 
 ### Question Difficulty
-The `Difficulty` enumerator contains all valid options for the "difficulty" value of `RequestAsync()`.
+The `Difficulty` enumerator contains all valid options for the "difficulty" value of the API.
 | Value       | Description       | Difficulty Value |
 | ----------- | ------------------ | ----------------- |
 | `Any`       | Any difficulty     | -                 |
@@ -72,7 +79,7 @@ The `Difficulty` enumerator contains all valid options for the "difficulty" valu
 | `Hard`      | Hard               | "hard"            |
 
 ### Question Types
-The `QuestionType` enumerator contains all valid options for the "type" value of `RequestAsync()`.
+The `QuestionType` enumerator contains all valid options for the "type" value of the API.
 | Value               | Description           | Type Value  |
 | ------------------- | --------------------- | ----------- |
 | `Any`               | Any type of question   | -           |
@@ -80,7 +87,7 @@ The `QuestionType` enumerator contains all valid options for the "type" value of
 | `TrueFalse`         | True or false question  | "boolean"   |
 
 ### Question Encoding
-The `Encoding` enumerator contains all valid options for the "encoding" value of `RequestAsync()`.
+The `Encoding` enumerator contains all valid options for the "encoding" value of the API.
 | Value         | Description       | Encoding Value |
 | ------------- | ------------------ | --------------- |
 | `HTML`        | HTML               | -               |
@@ -89,10 +96,7 @@ The `Encoding` enumerator contains all valid options for the "encoding" value of
 | `Base64`      | Base64             | "base64"        |
 
 
-### Manipulating Questions
-> [!IMPORTANT]  
-> All values in the `Question` class will be encoded in whatever you specified when calling `RequestAsync()`. You must handle parsing of this data.
-
+### Questions
 The `Question` class looks like this:
 ```cs
 public class Question
