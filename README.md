@@ -136,11 +136,11 @@ The `CategoryCount` class looks like this:
 ```cs
 public class CategoryCount
 {
-	public int CategoryId { get; set; }
-	public int TotalQuestions { get; set; }
-	public int TotalEasyQuestions { get; set; }
-	public int TotalMediumQuestions { get; set; }
-	public int TotalHardQuestions { get; set; }
+  public int CategoryId { get; set; }
+  public int TotalQuestions { get; set; }
+  public int TotalEasyQuestions { get; set; }
+  public int TotalMediumQuestions { get; set; }
+  public int TotalHardQuestions { get; set; }
 }
 ```
 
@@ -156,11 +156,11 @@ The `GlobalCount` class looks like this:
 ```cs
 public class GlobalCount
 {
-	public int TotalQuestions { get; set; }
-	public int TotalPendingQuestions { get; set; }
-	public int TotalVerifiedQuestions { get; set; }
-	public int TotalRejectedQuestions { get; set; }
-	public List<GlobalCategoryCount> Categories { get; set; }
+  public int TotalQuestions { get; set; }
+  public int TotalPendingQuestions { get; set; }
+  public int TotalVerifiedQuestions { get; set; }
+  public int TotalRejectedQuestions { get; set; }
+  public List<GlobalCategoryCount> Categories { get; set; }
 }
 ```
 
