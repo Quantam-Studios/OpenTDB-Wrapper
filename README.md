@@ -104,8 +104,7 @@ The `Encoding` enumerator contains all valid options for the "encoding" value of
 | `URL`         | URL                | "url3986"       |
 | `Base64`      | Base64             | "base64"        |
 
-
-### Questions
+### Question
 The `Question` class looks like this:
 ```cs
 public class Question
@@ -118,15 +117,59 @@ public class Question
   public string[] IncorrectAnswers { get; set; }
 }
 ```
+
+### Category Question Count Lookup
+If you need to determine how many questions are in a specific category you can do so with `GetCategoryQuestionTotalsAsync()`\
+This can be done with a specific `Category`:
+```cs
+await GetCategoryQuestionTotalsAsync(Category.Nature);
+// returns a CategoryCount object.
+```
+Or with an integer representing the `Category` ID:
+```cs
+await GetCategoryQuestionTotalsAsync(17);
+// returns a CategoryCount object.
+```
+
+### CategoryCount
+The `CategoryCount` class looks like this:
+```cs
+public class CategoryCount
+{
+	public int CategoryId { get; set; }
+	public int TotalQuestions { get; set; }
+	public int TotalEasyQuestions { get; set; }
+	public int TotalMediumQuestions { get; set; }
+	public int TotalHardQuestions { get; set; }
+}
+```
+
+### Global Question Count Lookup
+If you need to find out things like how many questions there are in the entire database you should use `GetGlobalQuestionTotalsAsync()`.
+```cs
+await GetGlobalQuestionTotalsAsync();
+// returns a GlobalCount object.
+```
+
+### GlobalCount
+The `GlobalCount` class looks like this:
+```cs
+public class GlobalCount
+{
+	public int TotalQuestions { get; set; }
+	public int TotalPendingQuestions { get; set; }
+	public int TotalVerifiedQuestions { get; set; }
+	public int TotalRejectedQuestions { get; set; }
+	public List<GlobalCategoryCount> Categories { get; set; }
+}
+```
+
 # API Coverage
 Currently, this wrapper supports all, but the following (there are plans to support all of these):
 | Name                                      | Endpoint                                                  |
 | ----------------------------------------- | --------------------------------------------------------- |
 | Session tokens                            | -                                                         |
 | Category lookup endpoint                  | https://opentdb.com/api_category.php                      |
-| Category Question Count endpoint          | https://opentdb.com/api_count.php?category=CATEGORY_ID_HERE |
-| Global Question Count endpoint            | https://opentdb.com/api_count_global.php                  |
-
 
 # Legal Stuff
 - Open Trivia DB API uses [Creative Commons Attribution-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-sa/4.0/).

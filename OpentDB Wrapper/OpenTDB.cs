@@ -40,7 +40,7 @@ namespace OpenTDB
                 var response = await HttpClient.SendAsync(request).ConfigureAwait(false);
                 var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                return ParseResponse(content);
+                return ParseQuestionResponse(content);
             }
             catch (HttpRequestException ex)
             {
@@ -77,8 +77,99 @@ namespace OpenTDB
 
                 var response = await HttpClient.SendAsync(request).ConfigureAwait(false);
                 var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var parsedResponse = ParseResponse(content);
-                ConvertBase64Response(ref parsedResponse);
+                var parsedResponse = ParseQuestionResponse(content);
+                ConvertBase64Question(ref parsedResponse);
+                return parsedResponse;
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new OpenTDBException($"HTTP request failed: {ex.Message}");
+            }
+            catch (JsonException ex)
+            {
+                throw new OpenTDBException($"JSON parsing failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the total count of questions for a specific category.
+        /// </summary>
+        /// <param name="category">Category for which to retrieve question totals.</param>
+        /// <returns>Object containing category question counts.</returns>
+        /// <exception cref="OpenTDBException">Thrown if the HTTP request fails or JSON parsing fails.</exception>
+        public async Task<CategoryCount> GetCategoryQuestionTotalsAsync(Category category)
+        {
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, $"https://opentdb.com/api_count.php?category={GetCategoryId(category)}");
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                var response = await HttpClient.SendAsync(request).ConfigureAwait(false);
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var parsedResponse = ParseCategoryResponse(content);
+                return parsedResponse;
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new OpenTDBException($"HTTP request failed: {ex.Message}");
+            }
+            catch (JsonException ex)
+            {
+                throw new OpenTDBException($"JSON parsing failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the total count of questions for a specific category using the category ID.
+        /// </summary>
+        /// <param name="categoryId">ID of the category for which to retrieve question totals.</param>
+        /// <returns>Object containing category question counts.</returns>
+        /// <exception cref="OpenTDBException">Thrown if the HTTP request fails or JSON parsing fails.</exception>
+        /// <exception cref="ArgumentException">Thrown if categoryId is not within the range of 9 and 32 (inclusive).</exception>
+        public async Task<CategoryCount> GetCategoryQuestionTotalsAsync(uint categoryId)
+        {
+            // Check if categoryId is within the allowed range
+            if (categoryId < 9 | categoryId > 32)
+            {
+                throw new ArgumentException("Cateogry ID must be between 9 and 32 (inclusive).", nameof(categoryId));
+            }
+
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, $"https://opentdb.com/api_count.php?category={categoryId}");
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                var response = await HttpClient.SendAsync(request).ConfigureAwait(false);
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var parsedResponse = ParseCategoryResponse(content);
+                return parsedResponse;
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new OpenTDBException($"HTTP request failed: {ex.Message}");
+            }
+            catch (JsonException ex)
+            {
+                throw new OpenTDBException($"JSON parsing failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Retrieves global question totals from the Open Trivia Database (OpenTDB) API.
+        /// </summary>
+        /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.
+        /// The task result contains a <see cref="GlobalCount"/> object representing global question counts.</returns>
+        /// <exception cref="OpenTDBException">Thrown when the HTTP request fails or JSON parsing encounters an error.</exception>
+        public async Task<GlobalCount> GetGlobalQuestionTotalsAsync()
+        {
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, "https://opentdb.com/api_count_global.php");
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                var response = await HttpClient.SendAsync(request).ConfigureAwait(false);
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var parsedResponse = ParseGlobalTotalResponse(content);
                 return parsedResponse;
             }
             catch (HttpRequestException ex)
@@ -138,7 +229,7 @@ namespace OpenTDB
         /// </summary>
         /// <param name="response">API response as a string.</param>
         /// <returns>List of parsed questions.</returns>
-        private List<Question> ParseResponse(string response)
+        private List<Question> ParseQuestionResponse(string response)
         {
             var jsonData = JsonNode.Parse(response).AsObject();
 
@@ -179,10 +270,77 @@ namespace OpenTDB
         }
 
         /// <summary>
+        /// Parses the API response for category question totals and returns a CategoryCount object.
+        /// </summary>
+        /// <param name="response">API response as a string.</param>
+        /// <returns>Object containing category question counts.</returns>
+        private CategoryCount ParseCategoryResponse(string response)
+        {
+            CategoryCount categoryCount = new();
+
+            var jsonData = JsonNode.Parse(response).AsObject();
+    
+            // Category ID
+            categoryCount.CategoryId = Int16.Parse(jsonData["category_id"].ToString());
+
+            var jsonCategoryCount = JsonNode.Parse(jsonData["category_question_count"].ToString()).AsObject();
+
+            // Category Totals
+            categoryCount.TotalQuestions = Int16.Parse(jsonCategoryCount["total_question_count"].ToString());
+            categoryCount.TotalEasyQuestions = Int16.Parse(jsonCategoryCount["total_easy_question_count"].ToString());
+            categoryCount.TotalMediumQuestions = Int16.Parse(jsonCategoryCount["total_medium_question_count"].ToString());
+            categoryCount.TotalHardQuestions = Int16.Parse(jsonCategoryCount["total_hard_question_count"].ToString());
+            
+            return categoryCount;
+        }
+
+        /// <summary>
+        /// Parses the global question totals from the JSON response received from the Open Trivia Database (OpenTDB) API.
+        /// </summary>
+        /// <param name="response">The JSON response string containing global question totals.</param>
+        /// <returns>A <see cref="GlobalCount"/> object representing global question counts.</returns>
+        private GlobalCount ParseGlobalTotalResponse(string response)
+        {
+            GlobalCount globalCount = new();
+
+            var jsonData = JsonNode.Parse(response).AsObject();
+            var jsonTotalCounts = JsonNode.Parse(jsonData["overall"].ToString()).AsObject();
+
+            // Overall
+            globalCount.TotalQuestions = Int32.Parse(jsonTotalCounts["total_num_of_questions"].ToString());
+            globalCount.TotalVerifiedQuestions = Int32.Parse(jsonTotalCounts["total_num_of_verified_questions"].ToString());
+            globalCount.TotalPendingQuestions = Int32.Parse(jsonTotalCounts["total_num_of_pending_questions"].ToString());
+            globalCount.TotalRejectedQuestions = Int32.Parse(jsonTotalCounts["total_num_of_rejected_questions"].ToString());
+
+            var jsonCategories = jsonData["categories"].AsObject();
+            globalCount.Categories = new();
+
+            // Categories
+            foreach (var categoryNode in jsonCategories)
+            {
+                var categoryId = int.Parse(categoryNode.Key);
+                var categoryData = categoryNode.Value.AsObject();
+
+                var categoryTotals = new GlobalCategoryCount
+                {
+                    CategoryId = categoryId,
+                    TotalQuestions = Int32.Parse(categoryData["total_num_of_questions"].ToString()),
+                    PendingQuestions = Int32.Parse(categoryData["total_num_of_pending_questions"].ToString()),
+                    VerifiedQuestions = Int32.Parse(categoryData["total_num_of_verified_questions"].ToString()),
+                    RejectedQuestions = Int32.Parse(categoryData["total_num_of_rejected_questions"].ToString())
+                };
+
+                globalCount.Categories.Add(categoryTotals);
+            }
+
+            return globalCount;
+        }
+
+        /// <summary>
         /// Converts base64-encoded strings in the list of questions to their original UTF-8 representations.
         /// </summary>
         /// <param name="questions">List of questions to be modified.</param>
-        private void ConvertBase64Response(ref List<Question> questions)
+        private void ConvertBase64Question(ref List<Question> questions)
         {
             foreach (var question in questions)
             {
@@ -191,6 +349,7 @@ namespace OpenTDB
                 question.QuestionTitle = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(question.QuestionTitle));
                 question.Type = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(question.Type));
                 question.CorrectAnswer = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(question.CorrectAnswer));
+                
                 for (int i = 0; i < question.IncorrectAnswers.Length; i++)
                 {
                     question.IncorrectAnswers[i] = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(question.IncorrectAnswers[i]));
@@ -231,87 +390,73 @@ namespace OpenTDB
         /// <returns>Category string for the API link.</returns>
         private string GetCategoryString(Category category) 
         {
-            int categoryValue = 0;
+            int categoryValue = GetCategoryId(category);
 
+            return $"&category={categoryValue}";
+        }
+
+        /// <summary>
+        /// Gets the category ID based on the provided category.
+        /// </summary>
+        /// <param name="category">Category enum value.</param>
+        /// <returns>Category ID as an integer. 0 if Category.Any</returns>
+        public int GetCategoryId(Category category)
+        {
             switch (category)
             {
                 case Category.Any:
-                    return "";
+                    return 0;
                 case Category.GeneralKnowledge:
-                    categoryValue = 9;
-                    break;
+                    return 9;
                 case Category.Books:
-                    categoryValue = 10;
-                    break;
+                    return 10;
                 case Category.Film:
-                    categoryValue = 11;
-                    break;
+                    return 11;
                 case Category.Music:
-                    categoryValue = 12;
-                    break;
+                    return 12;
                 case Category.MusicalsTheatres:
-                    categoryValue = 13;
-                    break;
+                    return 13;
                 case Category.Television:
-                    categoryValue = 14;
-                    break;
+                    return 14;
                 case Category.VideoGames:
-                    categoryValue = 15;
-                    break;
+                    return 15;
                 case Category.BoardGames:
-                    categoryValue = 16;
-                    break;
+                    return 16;
                 case Category.Nature:
-                    categoryValue = 17;
-                    break;
+                    return 17;
                 case Category.Computers:
-                    categoryValue = 18;
-                    break;
+                    return 18;
                 case Category.Mathematics:
-                    categoryValue = 19;
-                    break;
+                    return 19;
                 case Category.Mythology:
-                    categoryValue = 20;
-                    break;
+                    return 20;
                 case Category.Sports:
-                    categoryValue = 21;
-                    break;
+                    return 21;
                 case Category.Geography:
-                    categoryValue = 22;
-                    break;
+                    return 22;
                 case Category.History:
-                    categoryValue = 23;
-                    break;
+                    return 23;
                 case Category.Politics:
-                    categoryValue = 24;
-                    break;
+                    return 24;
                 case Category.Art:
-                    categoryValue = 25;
-                    break;
+                    return 25;
                 case Category.Celebrities:
-                    categoryValue = 26; 
-                    break;
+                    return 26;
                 case Category.Animals:
-                    categoryValue = 27;
-                    break;
+                    return 27;
                 case Category.Vehicles:
-                    categoryValue = 28;
-                    break;
+                    return 28;
                 case Category.Comics:
-                    categoryValue = 29;
-                    break;
+                    return 29;
                 case Category.Gadgets:
-                    categoryValue = 30;
-                    break;
+                    return 30;
                 case Category.AnimeManga:
-                    categoryValue = 31;
-                    break;
+                    return 31;
                 case Category.CartoonsAnimations:
-                    categoryValue = 32;
-                    break;
+                    return 32;
+                default:
+                    return 0;
             }
-
-            return $"&category={categoryValue}";
         }
 
         /// <summary>
