@@ -11,7 +11,13 @@ namespace OpenTDB
 {
     public class OpenTDB
     {
-        private static readonly HttpClient HttpClient = new();
+        public static HttpClient HttpClient = new();
+        // Constructor with optional HttpClient and token parameters
+        public OpenTDB(HttpClient? httpClient = null)
+        {
+            // If an HttpClient is provided, use it; otherwise, create a new instance
+            HttpClient = httpClient ?? new();
+        }
 
         /// <summary>
         /// Requests trivia questions from the Open Trivia Database with a specified encoding.
