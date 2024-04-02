@@ -6,17 +6,54 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Encoding = OpenTDB.Enumerators.Encoding;
+using System.Net.Http;
 
 namespace OpenTDB
 {
     public class OpenTDB
     {
         public static HttpClient HttpClient = new();
+        public static Token? Token = null;
+
         // Constructor with optional HttpClient and token parameters
-        public OpenTDB(HttpClient? httpClient = null)
+        public OpenTDB(HttpClient? httpClient = null, Token? token = null)
         {
             // If an HttpClient is provided, use it; otherwise, create a new instance
             HttpClient = httpClient ?? new();
+
+            Token = token;
+        }
+
+        /// <summary>
+        /// Requests a session token from the Open Trivia Database.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="Task{TResult}"/> representing the asynchronous operation. The task result contains
+        /// a <see cref="Token"/> object representing the session token obtained from the API.
+        /// </returns>
+        /// <exception cref="OpenTDBException">
+        /// Thrown when an error occurs during the HTTP request or JSON parsing.
+        /// </exception>
+        public async Task<Token> RequestTokenAsync()
+        {
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, "https://opentdb.com/api_token.php?command=request");
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                var response = await HttpClient.SendAsync(request).ConfigureAwait(false);
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                return ParseTokenResponse(content);
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new OpenTDBException($"HTTP request failed: {ex.Message}");
+            }
+            catch (JsonException ex)
+            {
+                throw new OpenTDBException($"JSON parsing failed: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -227,7 +264,46 @@ namespace OpenTDB
                 link.Append(GetEncodingString(encoding));
             }
 
+            if (Token != null)
+            {
+                link.Append($"&token={Token.Value}");
+            }
+
             return link.ToString();
+        }
+
+        /// <summary>
+        /// Parses the response received from the Open Trivia Database after requesting a session token.
+        /// </summary>
+        /// <param name="response">The JSON response received from the API.</param>
+        /// <returns>A <see cref="Token"/> object representing the session token obtained from the API.</returns>
+        /// <exception cref="OpenTDBException">
+        /// Thrown when the response format is invalid or contains an error code indicating a failure in token acquisition.
+        /// </exception>
+        private Token ParseTokenResponse(string response)
+        {
+            Token token = new();
+
+            var jsonData = JsonNode.Parse(response).AsObject();
+
+            // Response Codes
+            if (jsonData.TryGetPropertyValue("response_code", out var responseCodeNode) && responseCodeNode is JsonValue responseCode)
+            {
+                var code = (int)responseCode;
+                if (code != 0)
+                {
+                    throw new OpenTDBException(GetResponseMessage(code));
+                }
+            }
+            else
+            {
+                throw new OpenTDBException("Invalid response format. Response code is missing.");
+            }
+
+            // Token Value
+            token.Value = jsonData["token"].ToString();
+
+            return token;
         }
 
         /// <summary>
