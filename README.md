@@ -3,11 +3,11 @@ An async C# wrapper for the [Open Trivia DB API](https://opentdb.com/api_config.
 # Add to Project
 Via `dotnet`:
 ```console
-dotnet add package OpenTDB-Wrapper --version 1.5.0
+dotnet add package OpenTDB-Wrapper --version 1.8.0
 ```
 Via `PackageReference` in your `.csproj` file:
 ```csproj
-<PackageReference Include="OpenTDB-Wrapper" Version="1.5.0" />
+<PackageReference Include="OpenTDB-Wrapper" Version="1.8.0" />
 ```
 # Usage
 ### Setup
@@ -21,8 +21,35 @@ using OpenTDB.Models; // For interacting with the Question class
 
 Create an instance of `OpenTDB`.
 ```cs
-OpenTDB.OpenTDB openTDB = new(); // This contains an HttpClient and it is good practice to not duplicate it.
+OpenTDB.OpenTDB openTDB = new();
 ```
+If you want to pass in your own `HttpClient` you can do it like so:
+```cs
+HttpClient httpClient = new();
+
+OpenTDB.OpenTDB openTDB = new(httpClient);
+```
+### Using Tokens
+> [!WARNING] 
+> It is **highly** recommended that you call `InitializeTokenAsync()` immediately after creation of the `OpenTDB` object if you call it at all.
+
+The Open Trivia Database API provides session tokens for ensuring no duplicate questions are retrieved. You can start usage of a token like so:
+```cs
+await openTDB.InitializeTokenAsync();
+// Initializes the session Token.
+```
+After one of the following happens you will need to call `ResetTokenAsync()`, this will get a new session token: 
+- After **6 hours** your session token is automatically deleted by Open Trivia Database. 
+- If you ever exhaust all questions in the database.
+
+- You will know for certain that you should call this method if you get one of the following exceptions, these indicate your session token is dead:
+- `Code 3: Token Not Found | Session Token does not exist.`
+- `Code 4: Token Empty | Session Token has returned all possible questions for the specified query. Resetting the Token is necessary.`
+```cs
+await openTDB.ResetTokenAsync();
+// Sets the Token to a newly created one.
+```
+
 ### Getting Questions
 > [!WARNING]
 > `GetQuestionsAsync()` should be wrapped in a `try-catch` block as it throws `OpenTDBException` and `ArguementException`.
@@ -168,7 +195,6 @@ public class GlobalCount
 Currently, this wrapper supports all, but the following (there are plans to support all of these):
 | Name                                      | Endpoint                                                  |
 | ----------------------------------------- | --------------------------------------------------------- |
-| Session tokens                            | -                                                         |
 | Category lookup endpoint                  | https://opentdb.com/api_category.php                      |
 
 # Legal Stuff

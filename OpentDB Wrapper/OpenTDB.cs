@@ -6,22 +6,82 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Encoding = OpenTDB.Enumerators.Encoding;
-using System.Net.Http;
 
 namespace OpenTDB
 {
     public class OpenTDB
     {
-        public static HttpClient HttpClient = new();
-        public static Token? Token = null;
+        private readonly HttpClient HttpClient;
+        private Token? Token = null;
 
         // Constructor with optional HttpClient and token parameters
-        public OpenTDB(HttpClient? httpClient = null, Token? token = null)
+        public OpenTDB(HttpClient? httpClient = null)
         {
             // If an HttpClient is provided, use it; otherwise, create a new instance
             HttpClient = httpClient ?? new();
+        }
 
-            Token = token;
+        /// <summary>
+        /// Initializes the session token asynchronously if it has not been initialized already.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="Task"/> representing the asynchronous operation.
+        /// </returns>
+        /// <remarks>
+        /// This method initializes the session token obtained from the Open Trivia Database (OpenTDB) API. 
+        /// If the token has already been initialized, this method does nothing. 
+        /// To ensure that the token is initialized before making API requests, 
+        /// it is recommended to call this method after creating an instance of <see cref="OpenTDB"/>.
+        /// </remarks>
+        public async Task InitializeTokenAsync()
+        {
+            if (Token == null)
+            {
+                Token = await RequestTokenAsync();
+            }
+        }
+
+        /// <summary>
+        /// Asynchronously resets the session token obtained from the Open Trivia Database.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="Task"/> representing the asynchronous operation.
+        /// </returns>
+        /// <exception cref="OpenTDBException">
+        /// Thrown if the token has not been set previously or if an error occurs during the HTTP request or JSON parsing.
+        /// </exception>
+        public async Task ResetTokenAsync()
+        {
+            if (Token == null)
+            {
+                throw new OpenTDBException("You cannot reset a token that was never set.");
+            }
+
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, $"https://opentdb.com/api_token.php?command=reset&token={Token.Value}");
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                var response = await HttpClient.SendAsync(request).ConfigureAwait(false);
+                // Check if the response is null, indicating token deletion
+                if (response == null)
+                {
+                    Token = await RequestTokenAsync();
+                    return;
+                }
+
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                
+                Token = ParseTokenResponse(content);
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new OpenTDBException($"HTTP request failed: {ex.Message}");
+            }
+            catch (JsonException ex)
+            {
+                throw new OpenTDBException($"JSON parsing failed: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -34,7 +94,7 @@ namespace OpenTDB
         /// <exception cref="OpenTDBException">
         /// Thrown when an error occurs during the HTTP request or JSON parsing.
         /// </exception>
-        public async Task<Token> RequestTokenAsync()
+        private async Task<Token> RequestTokenAsync()
         {
             try
             {
@@ -280,7 +340,7 @@ namespace OpenTDB
         /// <exception cref="OpenTDBException">
         /// Thrown when the response format is invalid or contains an error code indicating a failure in token acquisition.
         /// </exception>
-        private Token ParseTokenResponse(string response)
+        private static Token ParseTokenResponse(string response)
         {
             Token token = new();
 
@@ -311,7 +371,7 @@ namespace OpenTDB
         /// </summary>
         /// <param name="response">API response as a string.</param>
         /// <returns>List of parsed questions.</returns>
-        private List<Question> ParseQuestionResponse(string response)
+        private static List<Question> ParseQuestionResponse(string response)
         {
             var jsonData = JsonNode.Parse(response).AsObject();
 
@@ -356,7 +416,7 @@ namespace OpenTDB
         /// </summary>
         /// <param name="response">API response as a string.</param>
         /// <returns>Object containing category question counts.</returns>
-        private CategoryCount ParseCategoryResponse(string response)
+        private static CategoryCount ParseCategoryResponse(string response)
         {
             CategoryCount categoryCount = new();
 
@@ -381,7 +441,7 @@ namespace OpenTDB
         /// </summary>
         /// <param name="response">The JSON response string containing global question totals.</param>
         /// <returns>A <see cref="GlobalCount"/> object representing global question counts.</returns>
-        private GlobalCount ParseGlobalTotalResponse(string response)
+        private static GlobalCount ParseGlobalTotalResponse(string response)
         {
             GlobalCount globalCount = new();
 
@@ -422,7 +482,7 @@ namespace OpenTDB
         /// Converts base64-encoded strings in the list of questions to their original UTF-8 representations.
         /// </summary>
         /// <param name="questions">List of questions to be modified.</param>
-        private void ConvertBase64Question(ref List<Question> questions)
+        private static void ConvertBase64Question(ref List<Question> questions)
         {
             foreach (var question in questions)
             {
@@ -444,7 +504,7 @@ namespace OpenTDB
         /// </summary>
         /// <param name="code">Response code.</param>
         /// <returns>Response message.</returns>
-        private string GetResponseMessage(int code)
+        private static string GetResponseMessage(int code)
         {
             switch (code)
             {
@@ -470,7 +530,7 @@ namespace OpenTDB
         /// </summary>
         /// <param name="category">Category enum value.</param>
         /// <returns>Category string for the API link.</returns>
-        private string GetCategoryString(Category category) 
+        private static string GetCategoryString(Category category) 
         {
             int categoryValue = GetCategoryId(category);
 
@@ -482,7 +542,7 @@ namespace OpenTDB
         /// </summary>
         /// <param name="category">Category enum value.</param>
         /// <returns>Category ID as an integer. 0 if Category.Any</returns>
-        public int GetCategoryId(Category category)
+        public static int GetCategoryId(Category category)
         {
             switch (category)
             {
@@ -546,7 +606,7 @@ namespace OpenTDB
         /// </summary>
         /// <param name="difficulty">Difficulty enum value.</param>
         /// <returns>Difficulty string for the API link.</returns>
-        private string GetDifficultyString(Difficulty difficulty)
+        private static string GetDifficultyString(Difficulty difficulty)
         {
             string difficultyValue = "";
 
@@ -573,7 +633,7 @@ namespace OpenTDB
         /// </summary>
         /// <param name="type">Question type enum value.</param>
         /// <returns>Question type string for the API link.</returns>
-        private string GetQuestionTypeString(QuestionType type)
+        private static string GetQuestionTypeString(QuestionType type)
         {
             string typeValue = "";
             
@@ -597,7 +657,7 @@ namespace OpenTDB
         /// </summary>
         /// <param name="encoding">Encoding enum value.</param>
         /// <returns>Encoding string for the API link.</returns>
-        private string GetEncodingString(Encoding encoding) 
+        private static string GetEncodingString(Encoding encoding) 
         {
             string encodingValue = "";
 
