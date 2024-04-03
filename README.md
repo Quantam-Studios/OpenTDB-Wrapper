@@ -3,11 +3,11 @@ An async C# wrapper for the [Open Trivia DB API](https://opentdb.com/api_config.
 # Add to Project
 Via `dotnet`:
 ```console
-dotnet add package OpenTDB-Wrapper --version 1.8.0
+dotnet add package OpenTDB-Wrapper --version 1.8.1
 ```
 Via `PackageReference` in your `.csproj` file:
 ```csproj
-<PackageReference Include="OpenTDB-Wrapper" Version="1.8.0" />
+<PackageReference Include="OpenTDB-Wrapper" Version="1.8.1" />
 ```
 # Usage
 ### Setup

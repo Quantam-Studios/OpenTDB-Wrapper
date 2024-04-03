@@ -12,7 +12,7 @@
     <Description>A C# wrapper for the Open Trivia DB.</Description>
     <PackageTags>opentdb openTriviaDatabase wrapper trivia</PackageTags>
     <PackageReleaseNotes>Added support for session tokens and user-given HttpClients.</PackageReleaseNotes>
-    <VersionPrefix>1.8.0</VersionPrefix>
+    <VersionPrefix>1.8.1</VersionPrefix>
     <PackAsTool>False</PackAsTool>
     <PackageId>OpenTDB-Wrapper</PackageId>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
