@@ -42,7 +42,7 @@ After one of the following happens you will need to call `ResetTokenAsync()`, th
 - After **6 hours** your session token is automatically deleted by Open Trivia Database. 
 - If you ever exhaust all questions in the database.
 
-- You will know for certain that you should call this method if you get one of the following exceptions, these indicate your session token is dead:
+You will know for certain that you should call this method if you get one of the following exceptions, these indicate your session token is dead:
 - `Code 3: Token Not Found | Session Token does not exist.`
 - `Code 4: Token Empty | Session Token has returned all possible questions for the specified query. Resetting the Token is necessary.`
 ```cs
