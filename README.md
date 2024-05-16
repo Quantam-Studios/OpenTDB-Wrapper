@@ -3,11 +3,11 @@ An async C# wrapper for the [Open Trivia DB API](https://opentdb.com/api_config.
 # Add to Project
 Via `dotnet`:
 ```console
-dotnet add package OpenTDB-Wrapper --version 1.8.1
+dotnet add package OpenTDB-Wrapper --version 1.9.1
 ```
 Via `PackageReference` in your `.csproj` file:
 ```csproj
-<PackageReference Include="OpenTDB-Wrapper" Version="1.8.1" />
+<PackageReference Include="OpenTDB-Wrapper" Version="1.9.1" />
 ```
 # Usage
 ### Setup
@@ -191,11 +191,25 @@ public class GlobalCount
 }
 ```
 
+### API Category Lookup
+If you need to find just the categories provided by the API you should use `GetApiCategoriesAsync()` (although, you could always just look at the `Category` enum).
+```cs
+await GetApiCategoriesAsync()
+// returns a List<ApiCategory> object.
+```
+
+### ApiCategory
+The `ApiCategory` class looks like this:
+```cs
+public class ApiCategory
+{
+  public int Id { get; set; }
+  public string Name { get; set; }
+}
+```
+
 # API Coverage
-Currently, this wrapper supports all, but the following (there are plans to support all of these):
-| Name                                      | Endpoint                                                  |
-| ----------------------------------------- | --------------------------------------------------------- |
-| Category lookup endpoint                  | https://opentdb.com/api_category.php                      |
+This wrapper has 100% API coverage!
 
 # Legal Stuff
 - Open Trivia DB API uses [Creative Commons Attribution-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-sa/4.0/).

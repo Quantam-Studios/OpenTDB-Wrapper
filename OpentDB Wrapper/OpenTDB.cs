@@ -286,6 +286,36 @@ namespace OpenTDB
         }
 
         /// <summary>
+        /// Retrieves the list of available categories from the Open Trivia Database (OpenTDB) API.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="Task"/> representing the asynchronous operation.
+        /// The task result contains a <see cref="List{T}"/> of <see cref="ApiCategory"/> objects representing available categories.
+        /// </returns>
+        /// <exception cref="OpenTDBException">Thrown when the HTTP request fails or JSON parsing encounters an error.</exception>
+        public async Task<List<ApiCategory>> GetApiCategoriesAsync()
+        {
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, "https://opentdb.com/api_category.php");
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                var response = await HttpClient.SendAsync(request).ConfigureAwait(false);
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var parsedResponse = ParseApiCategoryResponse(content);
+                return parsedResponse;
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new OpenTDBException($"HTTP request failed: {ex.Message}");
+            }
+            catch (JsonException ex)
+            {
+                throw new OpenTDBException($"JSON parsing failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Creates the API link based on provided parameters.
         /// </summary>
         /// <param name="questionCount">Number of questions to include in the request.</param>
@@ -479,6 +509,33 @@ namespace OpenTDB
         }
 
         /// <summary>
+        /// Parses the JSON response from the Open Trivia Database (OpenTDB) API and constructs a list of <see cref="ApiCategory"/> objects.
+        /// </summary>
+        /// <param name="response">The JSON response string containing category data.</param>
+        /// <returns>A <see cref="List{T}"/> of <see cref="ApiCategory"/> objects parsed from the JSON response.</returns>
+        private static List<ApiCategory> ParseApiCategoryResponse(string response)
+        {
+            List<ApiCategory> apiCategories = new();
+
+            var jsonData = JsonNode.Parse(response).AsObject();
+            var jsonCategories = jsonData["trivia_categories"].AsArray();
+
+            // Categories
+            foreach (var categoryNode in jsonCategories)
+            {
+                var category = new ApiCategory
+                {
+                    Id = Int32.Parse(categoryNode["id"].ToString()),
+                    Name = categoryNode["name"].ToString()
+                };
+
+                apiCategories.Add(category);
+            }
+
+            return apiCategories;
+        }
+
+        /// <summary>
         /// Converts base64-encoded strings in the list of questions to their original UTF-8 representations.
         /// </summary>
         /// <param name="questions">List of questions to be modified.</param>
@@ -598,6 +655,72 @@ namespace OpenTDB
                     return 32;
                 default:
                     return 0;
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the <see cref="Category"/> enum value corresponding to the provided category ID.
+        /// </summary>
+        /// <param name="id">The ID of the category.</param>
+        /// <returns>
+        /// The <see cref="Category"/> enum value corresponding to the provided category ID, or <c>null</c> if no matching category is found.
+        /// </returns>
+        public static Category? GetCategoryFromId(int id)
+        {
+            switch (id)
+            {
+                case 0:
+                    return Category.Any;
+                case 9:
+                    return Category.GeneralKnowledge;
+                case 10:
+                    return Category.Books;
+                case 11:
+                    return Category.Film;
+                case 12:
+                    return Category.Music;
+                case 13:
+                    return Category.MusicalsTheatres;
+                case 14:
+                    return Category.Television;
+                case 15:
+                    return Category.VideoGames;
+                case 16:
+                    return Category.BoardGames;
+                case 17:
+                    return Category.Nature;
+                case 18:
+                    return Category.Computers;
+                case 19:
+                    return Category.Mathematics;
+                case 20:
+                    return Category.Mythology;
+                case 21:
+                    return Category.Sports;
+                case 22:
+                    return Category.Geography;
+                case 23:
+                    return Category.History;
+                case 24:
+                    return Category.Politics;
+                case 25:
+                    return Category.Art;
+                case 26:
+                    return Category.Celebrities;
+                case 27:
+                    return Category.Animals;
+                case 28:
+                    return Category.Vehicles;
+                case 29:
+                    return Category.Comics;
+                case 30:
+                    return Category.Gadgets;
+                case 31:
+                    return Category.AnimeManga;
+                case 32:
+                    return Category.CartoonsAnimations;
+                default:
+                    return null;
             }
         }
 
